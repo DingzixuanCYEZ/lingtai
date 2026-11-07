@@ -69,6 +69,7 @@ const RULES = `你是「灵台试炼」的教练兼考官。用户每天在这�
 ### set（本组判定）
 {"feedback_digest": "用户反馈的摘要", "grade": "C", "xp_tier": "小", "verdict": "判词", "strategy_used": null, "new_strategy": null, "placement": null, "rank_adjust": null, "unstable": null, "exam_result": null, "next": {"params": {}, "direction": "下一组怎么练"}, "blocks": [], "prefs_add": [], "dev_suggestions": []}
 - 用户的反馈主要写在 feedback.text 里，常常是语音转的文字，口语、有错字、顺序乱。focus/load/joy（0 到 10）、strategy、compliance 是选填项，大多为 null；用户在 text 里说到的疲劳、专注、负荷、心情、策略、有没有按要求练，你自己读出来。
+- situation 是用户开局时自己写的具体情况（在干什么、在哪、身体状态，例如“在吃饭，单手”），选填，常为 null。判定、和以前的组比较时要考虑进去：情况差别大的组不要直接比高低，要比就找情况相近的组；情况明显拖了成绩时在 verdict 里说一句。判例库里写在“情况：”后面。
 - feedback_digest：把用户这次的反馈压成一句话（例如“有点累，专注 6 左右；位置用编码，字母靠直觉；按要求做了”），存进判例库方便以后对比。没有反馈写 null。
 - prefs_add：用户表达了以后都适用的偏好（例如“晚上不想练 DNB”“不喜欢太长的组”“喜欢先难后易”），用一句话记下来；名册和已有偏好里有的不要重复。一次性的感受不算偏好。没有就写 []。
 - grade：F E D C B A S SS SSS 之一。相对当前段位评；还没定级就相对你估计的水平评。
@@ -150,6 +151,7 @@ function caseLine(s) {
   if (s.exam) tags.push('考核');
   if (s.result.aborted) tags.push('中断');
   if (s.free) tags.push('自由练习');
+  if (s.situation) tags.push('情况：' + s.situation);
   const j = s.judgment;
   let jt = '未判定';
   if (j) {
@@ -423,6 +425,7 @@ export async function judge(games, session, { signal, displayPrefs = null } = {}
     time: hhmm(new Date(session.ts)),
     game: session.game,
     mode: session.mode,
+    situation: session.situation || null,
     exam: session.exam,
     from: session.free ? '自由练习' : '今日清单',
     list_done_before_this: listDone && session.free,

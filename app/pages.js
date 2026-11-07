@@ -23,7 +23,7 @@ export function historyPage() {
       const j = s.judgment;
       const said = j?.feedback_digest || s.feedback?.text || s.feedback?.note;
       return h('div', { class: 'ui-hist' },
-        h('div', null, h('b', null, j ? j.grade : '未判定'), ` ${s.day} ${s.time} · ${g ? g.name : s.game} · ${modeName(s.mode)}`,
+        h('div', null, h('b', null, j ? j.grade : '未判定'), ` ${s.day} ${s.time} · ${g ? g.name : s.game} · ${modeName(s.mode)}${s.situation ? ` · ${s.situation}` : ''}`,
           s.exam ? h('span', { class: 'ui-tag hot' }, '考核') : null, s.result.aborted ? h('span', { class: 'ui-tag warn' }, '中断') : null),
         h('div', { class: 'ui-muted' }, (s.result.display || []).map(([k, v]) => `${k} ${v}`).join(' ｜ ')),
         said ? h('div', { class: 'ui-muted', style: 'margin-top:2px' }, '复盘：' + said) : null,

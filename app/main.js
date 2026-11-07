@@ -233,8 +233,17 @@ function prepare(opt, signal) {
       m === 'focus' ? '认真（戴耳机、专心）' : '休闲（边吃边玩）')));
   drawSeg();
 
+  // 具体情况（选填）：默认沿用今天上一组写的，点短语追加
+  const lastSit = getState().sessions.filter((s) => s.day === dayKey()).at(-1)?.situation || '';
+  const sit = h('input', { type: 'text', value: lastSit, placeholder: '选填，例如：在吃饭、单手拿手机、有点困' });
+  const chips = h('div', { class: 'ui-chips' }, ...['在吃饭', '单手', '戴耳机', '外面吵', '有点累', '刚睡醒', '在路上'].map((w) =>
+    h('button', { class: 'g-btn', onclick: () => {
+      const v = sit.value.trim();
+      if (!v.split(/[，,、\s]+/).includes(w)) sit.value = v ? v + '，' + w : w;
+    } }, w)));
+
   const start = () => {
-    const cfg = { game, params, mode, exam, free: !task, taskIndex: task ? taskIndex : null, goal: task?.goal || '', direction, origin: opt };
+    const cfg = { game, params, mode, situation: sit.value.trim() || null, exam, free: !task, taskIndex: task ? taskIndex : null, goal: task?.goal || '', direction, origin: opt };
     go('#/play', (sg) => play(cfg, sg), { replace: true, reenter: pages.home });
   };
 
@@ -256,6 +265,8 @@ function prepare(opt, signal) {
       }, choices) : null,
     h('h3', null, '模式'), seg,
     game.casual ? null : h('div', { class: 'g-note', style: 'margin-top:4px' }, '这个游戏只有认真模式。'),
+    h('h3', null, '具体情况（选填）'), sit, chips,
+    h('div', { class: 'g-note' }, '会跟这组记录一起存下来，教练判定时会参考。'),
     h('details', { style: 'margin-top:10px' },
       h('summary', { class: 'ui-muted' }, '显示设置（只改看着舒不舒服，不改难度）'),
       prefsBlock([game.id]),
@@ -307,7 +318,7 @@ async function play(cfg, signal) {
   const d = today();
   const session = {
     id: String(ts), day: dayKey(new Date(ts)), time: hhmm(new Date(ts)), ts,
-    game: game.id, line: game.line, mode, exam: cfg.exam, free: cfg.free, taskIndex: cfg.taskIndex,
+    game: game.id, line: game.line, mode, situation: cfg.situation || null, exam: cfg.exam, free: cfg.free, taskIndex: cfg.taskIndex,
     params, seed, goal: cfg.goal, direction: cfg.direction,
     displayPrefs: prefSummary(game.id),
     result: { aborted: !!result.aborted, summary: result.summary, display: result.display, accuracy: result.accuracy, trials: result.trials, audioFailed: result.audioFailed },
@@ -452,7 +463,7 @@ function verdictPage(session, signal) {
       h('div', { class: 'g-row', style: 'justify-content:flex-start;gap:16px' },
         h('div', { class: 'ui-grade g-' + j.grade }, j.grade),
         h('div', null,
-          h('div', null, `${game.name} · ${modeName(session.mode)}`),
+          h('div', null, `${game.name} · ${modeName(session.mode)}${session.situation ? ` · ${session.situation}` : ''}`),
           h('div', { class: 'ui-muted' }, session.exam ? `考核：${j.exam_result?.result || '—'}` : `修为 ${j.xp_tier}${a.xpGain ? ` +${a.xpGain}` : ''}`),
           typeof a.points === 'number' ? h('div', { class: 'ui-muted' }, `总段位积分 +${a.points}`) : null,
           j.strategy_used ? h('span', { class: 'ui-tag', style: 'margin-left:0' }, j.strategy_used) : null)),

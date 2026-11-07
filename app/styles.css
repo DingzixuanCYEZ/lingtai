@@ -97,6 +97,8 @@ a { color: var(--accent); }
 .ui-seg { display: flex; gap: 8px; }
 .ui-seg .g-btn { flex: 1; }
 .ui-seg .g-btn.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.ui-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ui-chips .g-btn { padding: 4px 10px; min-height: 0; font-size: 13px; }
 .ui-grade { font-size: 56px; font-weight: 800; line-height: 1; letter-spacing: 2px; }
 .ui-grade.g-S, .ui-grade.g-SS, .ui-grade.g-SSS { color: var(--gold); }
 .ui-grade.g-E, .ui-grade.g-F { color: var(--bad); }
