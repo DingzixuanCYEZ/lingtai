@@ -186,17 +186,21 @@ const gistChannel = {
   },
 };
 
+// 比内容不比 savedAt：每次推送都会把 savedAt 记成当时，电脑和 Gist 两边推的时间总差几毫秒，
+// 要是连它一起比，两边会永远“不一样”，每分钟互相再写一遍
+const content = (s) => stable({ ...s, savedAt: 0 });
+
 // 拉 → 合并 → 不一样就推。返回这台的存档有没有被改
 async function syncChannel(ch) {
   let changed = false;
   for (let tries = 0; tries < 4; tries++) {
     const pulled = await ch.pull();
     if (pulled.state) {
-      const before = stable(forServer());
+      const before = content(forServer());
       mergeStates(state, migrate(pulled.state), loadBase(ch.name));
-      if (stable(forServer()) !== before) changed = true;
+      if (content(forServer()) !== before) changed = true;
     }
-    if (pulled.state && stable(forServer()) === stable(blankKey(migrate(pulled.state)))) {
+    if (pulled.state && content(forServer()) === content(blankKey(migrate(pulled.state)))) {
       saveBase(ch.name, JSON.stringify(forServer()));
       return changed;
     }
@@ -281,11 +285,15 @@ export function today() {
   return state.days[k];
 }
 
+// 返回要给用户看的一句话（安卓 App 里存到“下载”文件夹；浏览器里直接下载，不用说）
 export function exportJSON() {
-  const blob = new Blob([JSON.stringify(forServer(), null, 1)], { type: 'application/json' });
+  const name = `灵台试炼-${dayKey()}.json`;
+  const text = JSON.stringify(forServer(), null, 1);
+  if (globalThis.LingtaiApp) return globalThis.LingtaiApp.saveFile(name, text);
+  const blob = new Blob([text], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `灵台试炼-${dayKey()}.json`;
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

@@ -329,6 +329,8 @@ async function play(cfg, signal) {
 
 // 玩的时候不让屏幕自己灭（手机放桌上边吃边玩）。切走再切回来要重新申请
 function keepAwake() {
+  const app = globalThis.LingtaiApp; // 安卓 App 版（开发/android）
+  if (app) { app.keepScreenOn(true); return () => app.keepScreenOn(false); }
   if (!navigator.wakeLock) return () => {};
   let lock = null, done = false;
   const get = () => { if (!done && !document.hidden) navigator.wakeLock.request('screen').then((l) => { lock = l; }, () => {}); };

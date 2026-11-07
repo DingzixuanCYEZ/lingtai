@@ -1,6 +1,6 @@
 // 离线可用：先上网取（3 秒没回就用缓存），取到了顺手更新缓存。只管本站的文件，DeepSeek、GitHub 的请求不碰。
 // VERSION 和 PRECACHE 由 开发/publish.mjs 发布时填好；这里是开发版（电脑上 serve.mjs 打开时不注册）。
-const VERSION = '133e667abbcb';
+const VERSION = '531fde3d22c4';
 const PRECACHE = [
  "./",
  "./assets/dnb/c.wav",

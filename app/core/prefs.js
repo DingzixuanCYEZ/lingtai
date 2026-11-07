@@ -51,7 +51,16 @@ export function applyDisplay() {
   if (d.theme === 'auto') el.removeAttribute('data-theme');
   else el.dataset.theme = d.theme;
   el.style.setProperty('--zoom', d.font);
+  barColor();
 }
+
+// 安卓 App 版：手机顶上状态栏跟着主题变深浅
+const darkQuery = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
+function barColor() {
+  const t = display().theme;
+  globalThis.LingtaiApp?.setDark(t === 'dark' || (t === 'auto' && !!darkQuery?.matches));
+}
+darkQuery?.addEventListener?.('change', barColor);
 
 export const specFor = (gameId) => [...COMMON_SPEC, ...(GAME_SPEC[gameId] || [])];
 

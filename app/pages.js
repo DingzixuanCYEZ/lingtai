@@ -106,9 +106,13 @@ function syncCard(signal, fileIn, syncMsg) {
         h('li', null, '也可以用老式 token（github.com/settings/tokens/new），只勾 gist'))),
     h('h3', null, '没网的时候'),
     h('div', { class: 'g-note' }, '没网照常玩，记录先存在这台设备，连上网自动合并（两台都玩过也不会互相覆盖）。两台都长期没网，就在一台“导出 JSON”，传到另一台“导入 JSON”——导入也是合并。'),
-    actions(btn('导出 JSON', exportJSON), btn('导入 JSON（合并）', () => fileIn.click()),
+    actions(btn('导出 JSON', () => { syncMsg.textContent = exportJSON() || ''; }), btn('导入 JSON（合并）', () => fileIn.click()),
       armedBtn('清空所有记录', '再点一次确认清空（先导出备份）', () => { resetAll(); applyDisplay(); goHome(); })),
-    syncMsg, fileIn);
+    syncMsg, fileIn,
+    /Android/.test(navigator.userAgent) && !globalThis.LingtaiApp && location.protocol === 'https:'
+      ? h('div', { class: 'g-note', style: 'margin-top:12px' }, '安卓可以装 App 版：', h('a', { href: '../lingtai.apk' }, '下载 lingtai.apk'),
+        '。App 里的数据和浏览器里的分开存，装好后在 App 里重新填 DeepSeek key 和 GitHub token，同步一下记录就都过来了。')
+      : null);
 }
 
 export async function settingsPage(signal) {
