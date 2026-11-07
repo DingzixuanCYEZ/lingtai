@@ -553,7 +553,7 @@ export default {
   aiDescription:
     '空间工坊，练心理旋转与折叠，可休闲。kinds 选题型并均衡混合：rot2d 平面多格骨牌，右图由左图转一个角度、可能翻面，判“同一个/镜像”；rot3d 立体积木（等轴测图），右图绕坐标轴转、可能镜像，判同一个/镜像，镜像对已用代码验证不能靠旋转重合；net 立方体展开图，netQs 选问法：opposite 问★的对面、arrow 问箭头指向哪一面（方向判断）、fold 问能否折成。' +
     '参数：cells 骨牌格数4–8，freeAngle 为真时平面转15°倍数的任意角（非直角）；blocks 积木方块数4–10；rotAxes 为2时连转两个轴；netHard 为真时不出隔一格同行的对面、箭头不指向紧邻格、不能折的图不含2×2块，选项增到4个；mirrorPct 镜像题比例；timeLimitMs 每题限时，0不限；休闲模式不限时且最多10题。' +
-    '段位参考：黑铁rot2d格数4–5；青铜freeAngle、rot3d少方块单轴；白银rot3d双轴、opposite；黄金arrow加netHard。三视图、截面、折纸打孔暂未实现。' +
+    '段位参考：白带rot2d格数4–5；黄带freeAngle、rot3d少方块单轴；橙带rot3d双轴、opposite；绿带arrow加netHard。三视图、截面、折纸打孔暂未实现。' +
     'summary：acc_rot2d/acc_rot3d/acc_net 分题型正确率，rt_*_ms 答对题的中位用时，acc_same/acc_mirror 旋转题里同一个与镜像各自的正确率（差距大说明有偏向），timeouts 超时题数。',
   defaults: { ...DEFAULTS, kinds: DEFAULTS.kinds.slice(), netQs: DEFAULTS.netQs.slice() },
   paramSpec: {
