@@ -10,7 +10,7 @@
 // - 其他字段（清单、档案、设置、显示偏好……）：只有一边改过用那边，两边都改过用后存的那边；
 // - 清空过所有记录（epoch 不同）：用后清空的那边整份。
 
-import { LINE_IDS, xpCap } from './ranks.js';
+import { LINE_IDS, xpCap, roundXp } from './ranks.js';
 
 // 键排好序的 JSON，用来比较两份是否一样（两台设备写出的键顺序可能不同）
 export function stable(x) {
@@ -95,7 +95,7 @@ function mergeLine(id, l, r, b, localNewer) {
   if (b) {
     if (l.rank === b.rank && r.rank === b.rank) {
       // 两边都练了、都没升降段：两边涨的修为都算
-      const xp = Math.max(0, Math.min(xpCap(id, l.rank), (r.xp || 0) + (l.xp || 0) - (b.xp || 0)));
+      const xp = roundXp(Math.max(0, Math.min(xpCap(id, l.rank), (r.xp || 0) + (l.xp || 0) - (b.xp || 0))));
       return replaceInPlace(l, { ...(localNewer ? l : r), xp });
     }
     const lMoved = l.rank !== b.rank, rMoved = r.rank !== b.rank;

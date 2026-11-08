@@ -2,7 +2,7 @@
 // 顺序：① 规则+输出格式 ② 段位释义 ③ 段位表 ④ 游戏说明 —— 全部固定
 //       ⑤ 判例库+策略名册（只含今天以前的，当天不变） ⑥ 今天开始时的档案 ⑦ 当天对话依次追加
 
-import { LINES, LINE_IDS, rankLabel, rankLabels, totalLabels, isReserved, isBigBoundary, xpCap, parseRank, GRADES, XP_TIERS, CASUAL_MAX_TIER, EXAM_RESULTS, POINTS, totalFromPoints } from './ranks.js';
+import { LINES, LINE_IDS, rankLabel, rankLabels, totalLabels, isReserved, isBigBoundary, xpCap, parseRank, GRADES, XP_TIERS, XP_SCALE, XP_BANDS, xpShow, roundXp, CASUAL_MAX_TIER, EXAM_RESULTS, POINTS, totalFromPoints } from './ranks.js';
 import { getState, save, today, dayKey, hhmm, daysBetween } from './store.js';
 import { chatJSON } from './api.js';
 import { checkBlocks } from './blocks.js';
@@ -67,13 +67,14 @@ const RULES = `你是「灵台试炼」的教练兼考官。用户每天在这�
 - dev_suggestions：程序做不到但你想要的改动（新参数、新玩法、规则修改、发现的 bug），字符串数组，没有就写 []。不要假装已经做了。
 
 ### set（本组判定）
-{"feedback_digest": "用户反馈的摘要", "grade": "C", "xp_tier": "小", "verdict": "判词", "strategy_used": null, "new_strategy": null, "placement": null, "rank_adjust": null, "unstable": null, "exam_result": null, "next": {"params": {}, "direction": "下一组怎么练"}, "blocks": [], "prefs_add": [], "dev_suggestions": []}
+{"feedback_digest": "用户反馈的摘要", "grade": "C", "xp_tier": "小", "xp": 22, "verdict": "判词", "strategy_used": null, "new_strategy": null, "placement": null, "rank_adjust": null, "unstable": null, "exam_result": null, "next": {"params": {}, "direction": "下一组怎么练"}, "blocks": [], "prefs_add": [], "dev_suggestions": []}
 - 用户的反馈主要写在 feedback.text 里，常常是语音转的文字，口语、有错字、顺序乱。focus/load/joy（0 到 10）、strategy、compliance 是选填项，大多为 null；用户在 text 里说到的疲劳、专注、负荷、心情、策略、有没有按要求练，你自己读出来。
 - situation 是用户开局时自己写的具体情况（在干什么、在哪、身体状态，例如“在吃饭，单手”），选填，常为 null。判定、和以前的组比较时要考虑进去：情况差别大的组不要直接比高低，要比就找情况相近的组；情况明显拖了成绩时在 verdict 里说一句。判例库里写在“情况：”后面。
 - feedback_digest：把用户这次的反馈压成一句话（例如“有点累，专注 6 左右；位置用编码，字母靠直觉；按要求做了”），存进判例库方便以后对比。没有反馈写 null。
 - prefs_add：用户表达了以后都适用的偏好（例如“晚上不想练 DNB”“不喜欢太长的组”“喜欢先难后易”），用一句话记下来；名册和已有偏好里有的不要重复。一次性的感受不算偏好。没有就写 []。
 - grade：F E D C B A S SS SSS 之一。相对当前段位评；还没定级就相对你估计的水平评。
 - xp_tier：无 微 小 中 大 之一。休闲组最高“小”；根基不稳期间写“无”；考核组写“无”（考核结果写在 exam_result）。
+- xp：这组加多少修为，整数，必须落在档位的范围里：无 0，微 5 到 14，小 15 到 29，中 30 到 54，大 55 到 80。修为条一个小段 150，跨大境界那段 240。在档位里按这组的实际表现细分，不要总写整十：同是“中”，刚够中的写 30 出头，差一点到大的写 50 出头。评 F 的组、定级当组、根基不稳期间、考核组，程序都不加修为。
 - verdict：2 到 4 句，按这个顺序写：①这组结果怎么样，用一两个最关键的数字说（带上是什么）；②这说明什么：和你以前同样设置的组比是进步、持平还是退步，比的是哪天、什么设置，用大白话说，不列编号；如果用户的反馈改变了你对结果的理解（例如说了很累、没按要求练），在这里说；③下一组要做什么、为什么（一句）。评级和修为的理由也放在这几句里说清楚。
 - strategy_used：本组用的策略在名册里的名字。名册里没有就新起一个短名（2 到 6 个字），同时写 new_strategy：{"name": "短名", "desc": "一句话描述"}。不涉及策略时两项都写 null。
 - placement：这条线还没定级、你已心里有数时，写 {"rank": "段位表里的名字", "reason": "依据"}；否则 null。不能定到“留着”的段位。
@@ -155,7 +156,7 @@ function caseLine(s) {
   const j = s.judgment;
   let jt = '未判定';
   if (j) {
-    jt = `评${j.grade} 修为${j.xp_tier}`;
+    jt = `评${j.grade} 修为${j.xp_tier}${j.xp ?  + j.xp : ''}`;
     if (j.strategy_used) jt += ` 策略「${j.strategy_used}」`;
     if (j.exam_result) jt += ` 考核${j.exam_result.result}`;
     if (j.placement) jt += ` 定级${j.placement.rank}`;
@@ -186,7 +187,7 @@ export function lineState(id) {
   const cap = xpCap(id, L.rank);
   return {
     rank: L.rank == null ? '未定级' : rankLabel(id, L.rank),
-    xp: L.rank == null ? null : `${L.xp}/${cap}`,
+    xp: L.rank == null ? null : `${xpShow(L.xp)}/${cap * XP_SCALE}`,
     exam_ready: L.rank != null && L.xp >= cap,
     unstable: L.unstable,
   };
@@ -454,7 +455,8 @@ function applyJudgment(game, session, j, day) {
 
   const grade = GRADES.includes(j.grade) ? j.grade : (warn.push(`grade“${j.grade}”不合法，按 C 记`), 'C');
   let tier = j.xp_tier in XP_TIERS ? j.xp_tier : (warn.push(`xp_tier“${j.xp_tier}”不合法，按 无 记`), '无');
-  if (session.mode === 'casual' && XP_TIERS[tier] > XP_TIERS[CASUAL_MAX_TIER]) tier = CASUAL_MAX_TIER;
+  const capped = session.mode === 'casual' && XP_TIERS[tier] > XP_TIERS[CASUAL_MAX_TIER];
+  if (capped) tier = CASUAL_MAX_TIER;
 
   if (j.unstable === true && !L.unstable) { L.unstable = true; events.push('根基不稳：暂停修为增长'); }
   if (j.unstable === false && L.unstable) { L.unstable = false; events.push('根基已稳'); }
@@ -473,6 +475,16 @@ function applyJudgment(game, session, j, day) {
     else if (idx !== L.rank) { events.push(`段位调整：${rankLabel(game.line, L.rank)} → ${rankLabel(game.line, idx)}`); L.rank = idx; L.xp = Math.min(L.xp, xpCap(game.line, idx)); }
   }
 
+  // 档位范围内的具体修为（显示单位）：教练没给或给错了就用档位默认值
+  const [lo, hi] = XP_BANDS[tier];
+  const raw = j.xp == null || j.xp === '' ? NaN : Math.round(Number(j.xp));
+  let xpShown = XP_TIERS[tier] * XP_SCALE;
+  if (Number.isFinite(raw)) {
+    if (raw >= lo && raw <= hi) xpShown = raw;
+    else if (capped) xpShown = hi; // 休闲组档位被压到“小”，给的数也跟着压
+    else if (tier !== '无') warn.push(`xp ${j.xp} 不在“${tier}”的范围 ${lo}–${hi} 里，按 ${xpShown} 记`);
+  }
+
   let xpGain = 0;
   if (session.exam && L.rank != null) {
     const r = j.exam_result && EXAM_RESULTS.includes(j.exam_result.result) ? j.exam_result.result : null;
@@ -481,11 +493,11 @@ function applyJudgment(game, session, j, day) {
       const max = LINES[game.line].bigs.length * LINES[game.line].subs.length - 1;
       if (L.rank < max) { L.rank += 1; L.xp = 0; events.push(`突破！${rankLabel(game.line, before)} → ${rankLabel(game.line, L.rank)}`); }
     } else if (r === '半步') { L.xp = Math.round(xpCap(game.line, L.rank) * 0.8); events.push('半步：差一点，修为保留八成'); }
-    else { L.xp = Math.floor(L.xp / 2); events.push('未成：修为减半'); }
+    else { L.xp = roundXp(L.xp / 2); events.push('未成：修为减半'); }
   } else if (L.rank != null && !L.unstable && grade !== 'F' && !events.some((e) => e.startsWith('定级'))) {
     const cap = xpCap(game.line, L.rank);
-    xpGain = Math.min(XP_TIERS[tier], cap - L.xp);
-    L.xp += xpGain;
+    xpGain = roundXp(Math.max(0, Math.min(xpShown / XP_SCALE, cap - L.xp)));
+    L.xp = roundXp(L.xp + xpGain);
     if (L.xp >= cap) events.push('修为圆满，可以安排考核');
   }
 
@@ -509,7 +521,7 @@ function applyJudgment(game, session, j, day) {
   session.judgment = {
     feedback_digest: typeof j.feedback_digest === 'string' && j.feedback_digest.trim() ? j.feedback_digest.trim() : null,
     prefs_add: Array.isArray(j.prefs_add) ? j.prefs_add.filter((x) => typeof x === 'string') : [],
-    grade, xp_tier: tier,
+    grade, xp_tier: tier, xp: tier === '无' ? 0 : xpShown,
     verdict: String(j.verdict || ''),
     strategy_used: j.strategy_used || null,
     placement: j.placement || null,

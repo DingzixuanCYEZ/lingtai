@@ -1,7 +1,7 @@
 // 首页（段位 + 今日清单 + 跟教练说）→ 开局页 → 游戏 → 复盘页 → 判定页。记录、设置在 pages.js，导航和小部件在 ui.js。
 
 import { h } from './core/gamekit.js';
-import { LINES, LINE_IDS, rankLabel, xpCap, TOTAL_STARS } from './core/ranks.js';
+import { LINES, LINE_IDS, rankLabel, xpCap, xpShow, XP_SCALE, TOTAL_STARS } from './core/ranks.js';
 import { getState, save, today, dayKey, hhmm, initSync, onSyncChange, syncStatus, markDeleted } from './core/store.js';
 import { ensurePlan, judge, talk, explain, fullParams, lineState, totalNow } from './core/coach.js';
 import { canCall } from './core/api.js';
@@ -31,7 +31,7 @@ export function lineCard(id) {
     L.rank == null
       ? h('div', { class: 'ui-muted' }, '教练会先安排几组探底')
       : [h('div', { class: 'ui-xp' }, h('div', { style: `width:${Math.round((100 * L.xp) / cap)}%` })),
-         h('div', { class: 'ui-muted', style: 'margin-top:4px' }, `修为 ${L.xp} / ${cap}`)]);
+         h('div', { class: 'ui-muted', style: 'margin-top:4px' }, `修为 ${xpShow(L.xp)} / ${cap * XP_SCALE}`)]);
 }
 
 // 删掉一组（“这组不算”）：连同它在今日清单里打的勾
@@ -464,7 +464,7 @@ function verdictPage(session, signal) {
         h('div', { class: 'ui-grade g-' + j.grade }, j.grade),
         h('div', null,
           h('div', null, `${game.name} · ${modeName(session.mode)}${session.situation ? ` · ${session.situation}` : ''}`),
-          h('div', { class: 'ui-muted' }, session.exam ? `考核：${j.exam_result?.result || '—'}` : `修为 ${j.xp_tier}${a.xpGain ? ` +${a.xpGain}` : ''}`),
+          h('div', { class: 'ui-muted' }, session.exam ? `考核：${j.exam_result?.result || '—'}` : `修为 ${j.xp_tier}${a.xpGain ? ` +${xpShow(a.xpGain)}` : ''}`),
           typeof a.points === 'number' ? h('div', { class: 'ui-muted' }, `总段位积分 +${a.points}`) : null,
           j.strategy_used ? h('span', { class: 'ui-tag', style: 'margin-left:0' }, j.strategy_used) : null)),
       h('div', { style: 'margin-top:12px;line-height:1.7' }, j.verdict),

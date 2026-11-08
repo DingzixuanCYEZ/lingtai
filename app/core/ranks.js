@@ -17,6 +17,12 @@ export const TOTAL_SUBS = ['IV', 'III', 'II', 'I'];
 export const GRADES = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
 export const XP_TIERS = { '无': 0, '微': 1, '小': 2, '中': 4, '大': 7 };
 export const CASUAL_MAX_TIER = '小';
+// 修为显示时乘 XP_SCALE（存的仍是原来的单位，可以带一位小数），这样旧记录不用换算，没更新的页面也读得懂。
+// 教练在档位范围内给具体数（显示单位），档位的默认值就是 XP_TIERS × XP_SCALE。
+export const XP_SCALE = 10;
+export const XP_BANDS = { '无': [0, 0], '微': [5, 14], '小': [15, 29], '中': [30, 54], '大': [55, 80] };
+export const xpShow = (x) => Math.round((x || 0) * XP_SCALE);
+export const roundXp = (x) => Math.round(x * XP_SCALE) / XP_SCALE;
 export const EXAM_RESULTS = ['突破', '半步', '未成'];
 
 // 段位用整数下标表示：big * subs.length + sub
@@ -56,7 +62,7 @@ export function isBigBoundary(line, idx) {
   return (idx + 1) % n === 0;
 }
 
-// 修为条长度：小段 15，跨大境界 24（大境界突破更难）
+// 修为条长度：小段 15，跨大境界 24（大境界突破更难）；显示为 150 / 240
 export function xpCap(line, idx) {
   if (idx == null) return 15;
   return isBigBoundary(line, idx) ? 24 : 15;
